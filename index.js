@@ -52,22 +52,12 @@ client.connect(err => {
     })
 
     app.post('/addADoctor', (req, res) => {
-        const file = req.files.file;
-        const name = req.body.name;
-        const email = req.body.email;
-        const newImg = file.data;
-        const encImg = newImg.toString('base64');
-
-        var image = {                       
-            contentType: file.mimetype,
-            size: file.size,
-            img: Buffer.from(encImg, 'base64')
-        };
-
-        doctorCollection.insertOne({ name, email, image })
-            .then(result => {
-                res.send(result.insertedCount > 0);
-            })
+        const newDoctor = req.body;
+        console.log("Adding new doctor: ", newDoctor);
+        doctorCollection.insertOne(newDoctor).then((result) => {
+            console.log("inserted count: ", result.insertedCount);
+      res.send(result.insertedCount > 0);
+    });
     })
 
     app.get('/doctors', (req, res) => {
