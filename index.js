@@ -1,81 +1,123 @@
-const express = require('express');
-const bodyParser = require('body-parser');
-const cors = require('cors');
-const fileUpload = require('express-fileupload');
-const MongoClient = require('mongodb').MongoClient;
+const express = require("express");
+const bodyParser = require("body-parser");
+const cors = require("cors");
+const fs = require("fs-extra");
+const fileUpload = require("express-fileupload");
+const MongoClient = require("mongodb").MongoClient;
 const ObjectID = require("mongodb").ObjectID;
-require('dotenv').config()
+require("dotenv").config();
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.dbarr.mongodb.net/${process.env.DB_NAME}?retryWrites=true&w=majority`;
 
-
-const app = express()
+const app = express();
 
 app.use(express.json());
 app.use(cors());
-app.use(express.static('doctors'));
+app.use(express.static("doctors"));
 app.use(fileUpload());
 
 const port = 5000;
 
-app.get('/', (req, res) => {
-    res.send("Hello Ismail Hossen, your DoctorPatientPortal is connected DB")
-})
+app.get("/", (req, res) => {
+  res.send("Hello Ismail Hossen, your DoctorPatientPortal is connected DB");
+});
 
-const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
-client.connect(err => {
-    const appointmentCollection = client.db("DoctorPatientPortal").collection("appointments");
-    const doctorCollection = client.db("DoctorPatientPortal").collection("doctors");
+const client = new MongoClient(uri, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+});
+client.connect((err) => {
+  const appointmentCollection = client
+    .db("DoctorPatientPortal")
+    .collection("appointments");
+  const doctorCollection = client
+    .db("DoctorPatientPortal")
+    .collection("doctors");
 
-    app.post('/addAppointment', (req, res) => {
-        const appointment = req.body;
-        appointmentCollection.insertOne(appointment)
-            .then(result => {
-                res.send(result.insertedCount > 0)
-            })
-    });
-
-    app.get('/appointments', (req, res) => {
-        appointmentCollection.find({})
-            .toArray((err, documents) => {
-                res.send(documents);
-            })
-    })
-
-    app.post('/appointmentsByDate', (req, res) =>{
-        const date = req.body;
-        console.log(date.date);
-        appointmentCollection.find({date: date.date})
-        .toArray((err, documents)=>{
-            res.send(documents)
-        })
-    })
-
-    app.post('/addADoctor', (req, res) => {
-        const newDoctor = req.body;
-        console.log("Adding new doctor: ", newDoctor);
-        doctorCollection.insertOne(newDoctor).then((result) => {
-            console.log("inserted count: ", result.insertedCount);
+  app.post("/addAppointment", (req, res) => {
+    const appointment = req.body;
+    appointmentCollection.insertOne(appointment).then((result) => {
       res.send(result.insertedCount > 0);
     });
-    })
+  });
 
-    app.get('/doctors', (req, res) => {
-        doctorCollection.find({})
-            .toArray((err, documents) => {
-                res.send(documents);
-            })
+  app.get("/appointments", (req, res) => {
+    appointmentCollection.find({}).toArray((err, documents) => {
+      res.send(documents);
+    });
+  });
+
+  app.post("/appointmentsByDate", (req, res) => {
+    const date = req.body;
+    console.log(date.date);
+    appointmentCollection
+      .find({ date: date.date })
+      .toArray((err, documents) => {
+        res.send(documents);
+      });
+  });
+  //Write in Database
+  app.post("/addADoctor", (req, res) => {
+    const newDoctor = req.body;
+    console.log("Adding new doctor: ", newDoctor);
+    doctorCollection.insertOne(newDoctor).then((result) => {
+      console.log("inserted count: ", result.insertedCount);
+      res.send(result.insertedCount > 0);
+    });
+  });
+  /*
+  app.post("/addADoctor", (req, res) => {
+    const file = req.files.file;
+    const name = req.body.name;
+    const designation = req.body.designation;
+    const phone = req.body.phone;
+    console.log(name, designation, phone);
+    const filePath = `${__dirname}/doctors/$(file.name)`;
+
+    file.mv(filePath, (err) => {
+      if (err) {
+        console.log(err);
+        res.status(500).send({ msg: "Filed to upload" });
+      }
     });
 
-    app.post('/isDoctor', (req, res) => {
-        const email = req.body.email;
-        doctorCollection.find({ email: email })
-            .toArray((err, doctors) => {
-                res.send(doctors.length > 0);
-            })
-    })
+    const newImg = fs.readFileSync(filePath);
+    const encImg = newImg.toString("base64");
 
-// Delete Booking
+    var image = {
+      contentType: req.files.file.mimetype,
+      size: req.files.file.size,
+      img: Buffer.from(encImg, "base64"),
+    };
+
+    doctorCollection
+      .insertOne({ name, designation, phone, image })
+      .then((result) => {
+        fs.remove(filePath, (error) => {
+          if (error) {
+            console.log(error);
+            res.status(500).send({ msg: "Filed to upload" });
+          }
+        });
+        res.send(result.insertedCount > 0);
+      });
+  });*/
+  //Read by id
+  app.get("/doctors/:id", (req, res) => {
+    const id = req.params.id;
+    doctorCollection.find({ _id: ObjectID(id) }).toArray((err, documents) => {
+      res.send(documents[0]);
+    });
+  });
+
+  app.post("/isDoctor", (req, res) => {
+    const email = req.body.email;
+    doctorCollection.find({ email: email }).toArray((err, doctors) => {
+      res.send(doctors.length > 0);
+    });
+  });
+
+  // Delete Booking
   app.delete("/deleteBook/:id", (req, res) => {
     const id = ObjectID(req.params.id);
     console.log("delete this", id);
@@ -83,8 +125,6 @@ client.connect(err => {
       res.send(result.deletedCount > 0);
     });
   });
-
 });
 
-
-app.listen(process.env.PORT || port)
+app.listen(process.env.PORT || port);
