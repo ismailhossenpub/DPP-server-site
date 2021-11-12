@@ -65,48 +65,10 @@ client.connect((err) => {
       res.send(result.insertedCount > 0);
     });
   });
-  /*
-  app.post("/addADoctor", (req, res) => {
-    const file = req.files.file;
-    const name = req.body.name;
-    const designation = req.body.designation;
-    const phone = req.body.phone;
-    console.log(name, designation, phone);
-    const filePath = `${__dirname}/doctors/$(file.name)`;
-
-    file.mv(filePath, (err) => {
-      if (err) {
-        console.log(err);
-        res.status(500).send({ msg: "Filed to upload" });
-      }
-    });
-
-    const newImg = fs.readFileSync(filePath);
-    const encImg = newImg.toString("base64");
-
-    var image = {
-      contentType: req.files.file.mimetype,
-      size: req.files.file.size,
-      img: Buffer.from(encImg, "base64"),
-    };
-
-    doctorCollection
-      .insertOne({ name, designation, phone, image })
-      .then((result) => {
-        fs.remove(filePath, (error) => {
-          if (error) {
-            console.log(error);
-            res.status(500).send({ msg: "Filed to upload" });
-          }
-        });
-        res.send(result.insertedCount > 0);
-      });
-  });*/
-  //Read by id
-  app.get("/doctors/:id", (req, res) => {
-    const id = req.params.id;
-    doctorCollection.find({ _id: ObjectID(id) }).toArray((err, documents) => {
-      res.send(documents[0]);
+  //Read from Database
+  app.get("/doctors", (req, res) => {
+    doctorCollection.find().toArray((err, items) => {
+      res.send(items);
     });
   });
 
